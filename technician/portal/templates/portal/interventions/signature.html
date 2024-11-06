@@ -1,0 +1,273 @@
+<!-- signature.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Signature client</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .header {
+            background-color: #f3f4f6;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+        }
+
+        .signature-pad {
+            margin: 80px 1rem 80px 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background-color: white;
+            touch-action: none;
+        }
+
+        #signatureCanvas {
+            width: 100%;
+            height: 300px;
+            background-color: white;
+            cursor: crosshair;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            transition: opacity 0.2s;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+        }
+
+        .btn-clear {
+            background-color: #14224A;
+            color: white;
+        }
+
+        .btn-validate {
+            background-color: #14224A;
+            color: white;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #14224A;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+        }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Header -->
+    <div class="header">
+        <button onclick="goBack()" class="text-blue-900">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </button>
+        <h1 class="text-xl font-bold">Signature client</h1>
+    </div>
+
+    <!-- Signature Pad -->
+    <div class="signature-pad">
+        <canvas id="signatureCanvas"></canvas>
+    </div>
+
+    <!-- Buttons -->
+    <div class="button-container">
+        <button onclick="clearSignature()" class="btn btn-clear">EFFACER</button>
+        <button onclick="validateSignature()" class="btn btn-validate">VALIDER</button>
+    </div>
+
+    <!-- Navigation -->
+    <div class="navigation">
+        <button onclick="goBack()" class="nav-button">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            PRÉCÉDENT
+        </button>
+
+        <div class="flex gap-1">
+            {% for i in "123456"|make_list %}
+            <div class="w-2 h-2 rounded-full {% if forloop.counter == 6 %}bg-blue-900{% else %}bg-gray-300{% endif %}"></div>
+            {% endfor %}
+        </div>
+
+        <button onclick="finishIntervention()" class="nav-button" id="finishButton" disabled>
+            TERMINER
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        let hasSignature = false;
+        const canvas = document.getElementById('signatureCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // Set canvas size
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Drawing functions
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [
+                e.type === 'mousedown' ? e.offsetX : e.touches[0].pageX - canvas.offsetLeft,
+                e.type === 'mousedown' ? e.offsetY : e.touches[0].pageY - canvas.offsetTop
+            ];
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+
+            const x = e.type.includes('mouse') ? e.offsetX : e.touches[0].pageX - canvas.offsetLeft;
+            const y = e.type.includes('mouse') ? e.offsetY : e.touches[0].pageY - canvas.offsetTop;
+
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000';
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            [lastX, lastY] = [x, y];
+            hasSignature = true;
+            document.getElementById('finishButton').disabled = false;
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+
+        function clearSignature() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            hasSignature = false;
+            document.getElementById('finishButton').disabled = true;
+        }
+
+        function validateSignature() {
+            if (!hasSignature) {
+                alert('Veuillez signer avant de valider');
+                return;
+            }
+            const signatureData = canvas.toDataURL('image/png');
+            sessionStorage.setItem('signature', signatureData);
+            document.getElementById('finishButton').disabled = false;
+        }
+
+        // In signature.html, modify the finishIntervention function
+// In signature.html
+function finishIntervention() {
+    if (!hasSignature) {
+        alert('Veuillez signer et valider avant de terminer');
+        return;
+    }
+
+    // Get base64 data of signature
+    const signatureData = canvas.toDataURL('image/png');
+    const quality = sessionStorage.getItem('quality_checks');
+    const imagesBefore = sessionStorage.getItem('images_before');
+    const imagesAfter = sessionStorage.getItem('images_after');
+    const comment = sessionStorage.getItem('intervention_comment');
+
+    // Add loading state
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.className = 'loading-indicator';
+    loadingIndicator.textContent = 'Finalisation en cours...';
+    document.body.appendChild(loadingIndicator);
+
+    // Send all data to server
+    fetch('{% url "finish_intervention" intervention.uid %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            signature: signatureData,
+            quality: quality,
+            images_before: imagesBefore,
+            images_after: imagesAfter,
+            comments: comment
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Clear all session storage
+            sessionStorage.removeItem('quality_checks');
+            sessionStorage.removeItem('images_before');
+            sessionStorage.removeItem('images_after');
+            sessionStorage.removeItem('intervention_comment');
+
+            // Redirect to interventions list
+            window.location.href = "{% url 'interventions' %}";
+        } else {
+            alert('Erreur lors de la finalisation de l\'intervention: ' + (data.message || 'Erreur inconnue'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur lors de la finalisation de l\'intervention');
+    })
+    .finally(() => {
+        loadingIndicator.remove();
+    });
+}
+    </script>
+</body>
+</html>

@@ -2,7 +2,8 @@ services:
   - type: web
     name: astro
     env: python
-    buildCommand: pip install -r requirements.txt
+    plan: free
+    buildCommand: sh ./build.sh
     startCommand: gunicorn technician.wsgi:application
     envVars:
       - key: PYTHON_VERSION

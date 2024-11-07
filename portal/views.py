@@ -62,46 +62,66 @@ class InterventionListView(View):
         if 'token' not in request.session or 'user' not in request.session:
             return redirect('login')
 
-        # Initialize today first
+        # Initialize today
         today = datetime.now().strftime('%Y-%m-%d')
 
         api_service = AstroAPIService()
         token = request.session['token']
         user_uid = request.session['user']['uid']
 
-        # Get filter from query params, default to 'all'
-        filter_type = request.GET.get('filter', 'all')
-
         interventions = api_service.get_interventions(token, user_uid, page=1)
 
         if interventions:
-            # Your existing intervention processing code
-            for intervention in interventions:
-                intervention['date_obj'] = datetime.strptime(intervention['date_time'], '%d/%m/%Y')
-
-            if filter_type == 'planned':
-                interventions = [i for i in interventions if i['status_uid'] == 'planifiee']
-            elif filter_type == 'in_progress':
-                interventions = [i for i in interventions if i['status_uid'] == 'en_cours']
-
-            interventions = sorted(interventions, key=lambda x: x['date_obj'])
-
+            # Convert date strings and sort interventions
             grouped_interventions = {}
+
             for intervention in interventions:
-                date_key = intervention['date_obj'].strftime('%Y-%m-%d')
-                if date_key not in grouped_interventions:
-                    grouped_interventions[date_key] = []
-                grouped_interventions[date_key].append(intervention)
+                # Convert date from 'dd/mm/yyyy' to datetime object
+                try:
+                    date_obj = datetime.strptime(intervention['date_time'], '%d/%m/%Y')
+                    date_key = date_obj.strftime('%Y-%m-%d')
+
+                    # Format display date
+                    if date_key == today:
+                        display_date = "Aujourd'hui"
+                    else:
+                        # Format date in French
+                        day_name = date_format(date_obj, 'l')  # Get day name
+                        day_number = date_format(date_obj, 'j')  # Get day number
+                        month_name = date_format(date_obj, 'F')  # Get month name
+                        display_date = f"{day_name}, {day_number} {month_name}"
+
+                    # Add to grouped interventions
+                    if date_key not in grouped_interventions:
+                        grouped_interventions[date_key] = {
+                            'display_date': display_date,
+                            'interventions': []
+                        }
+                    grouped_interventions[date_key]['interventions'].append(intervention)
+
+                except ValueError as e:
+                    print(f"Error parsing date: {e}")
+                    continue
+
+            # Sort dates
+            sorted_dates = sorted(grouped_interventions.keys())
+            sorted_interventions = {}
+
+            # Put today first if it exists
+            if today in grouped_interventions:
+                sorted_interventions[today] = grouped_interventions[today]
+
+            # Add other dates
+            for date in sorted_dates:
+                if date != today:
+                    sorted_interventions[date] = grouped_interventions[date]
         else:
-            grouped_interventions = {}
+            sorted_interventions = {}
 
         return render(request, self.template_name, {
-            'grouped_interventions': grouped_interventions,
-            'today': today,
-            'current_filter': filter_type
+            'grouped_interventions': sorted_interventions,
+            'today': today
         })
-
-
 # portal/views.py
 class InterventionDetailView(View):
     template_name = 'portal/interventions/detail.html'

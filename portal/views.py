@@ -16,6 +16,8 @@ import time
 import base64
 from .utils import save_base64_file  # Add this import
 import tempfile
+from datetime import datetime
+from django.utils.dateformat import format as date_format
 
 
 INTERVENTION_STEPS = [
@@ -55,6 +57,9 @@ class LoginView(View):
             return render(request, self.template_name)
 
 
+# views.py
+
+
 class InterventionListView(View):
     template_name = 'portal/interventions/list.html'
 
@@ -74,30 +79,21 @@ class InterventionListView(View):
         if interventions:
             # Convert date strings and sort interventions
             grouped_interventions = {}
+            today_interventions = []
 
             for intervention in interventions:
-                # Convert date from 'dd/mm/yyyy' to datetime object
                 try:
+                    # Convert date from 'dd/mm/yyyy' to datetime object
                     date_obj = datetime.strptime(intervention['date_time'], '%d/%m/%Y')
                     date_key = date_obj.strftime('%Y-%m-%d')
 
-                    # Format display date
+                    # Add intervention to appropriate group
                     if date_key == today:
-                        display_date = "Aujourd'hui"
+                        today_interventions.append(intervention)
                     else:
-                        # Format date in French
-                        day_name = date_format(date_obj, 'l')  # Get day name
-                        day_number = date_format(date_obj, 'j')  # Get day number
-                        month_name = date_format(date_obj, 'F')  # Get month name
-                        display_date = f"{day_name}, {day_number} {month_name}"
-
-                    # Add to grouped interventions
-                    if date_key not in grouped_interventions:
-                        grouped_interventions[date_key] = {
-                            'display_date': display_date,
-                            'interventions': []
-                        }
-                    grouped_interventions[date_key]['interventions'].append(intervention)
+                        if date_key not in grouped_interventions:
+                            grouped_interventions[date_key] = []
+                        grouped_interventions[date_key].append(intervention)
 
                 except ValueError as e:
                     print(f"Error parsing date: {e}")
@@ -107,14 +103,14 @@ class InterventionListView(View):
             sorted_dates = sorted(grouped_interventions.keys())
             sorted_interventions = {}
 
-            # Put today first if it exists
-            if today in grouped_interventions:
-                sorted_interventions[today] = grouped_interventions[today]
+            # Add today's interventions if they exist
+            if today_interventions:
+                sorted_interventions['today'] = today_interventions
 
             # Add other dates
             for date in sorted_dates:
-                if date != today:
-                    sorted_interventions[date] = grouped_interventions[date]
+                sorted_interventions[date] = grouped_interventions[date]
+
         else:
             sorted_interventions = {}
 

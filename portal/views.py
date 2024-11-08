@@ -18,6 +18,7 @@ from .utils import save_base64_file  # Add this import
 import tempfile
 from datetime import datetime
 from django.utils.dateformat import format as date_format
+from django.utils import formats
 
 
 INTERVENTION_STEPS = [
@@ -85,10 +86,10 @@ class InterventionListView(View):
                 try:
                     # Convert date from 'dd/mm/yyyy' to datetime object
                     date_obj = datetime.strptime(intervention['date_time'], '%d/%m/%Y')
-                    date_key = date_obj.strftime('%Y-%m-%d')
+                    date_key = date_obj  # Keep as datetime object for template formatting
 
                     # Add intervention to appropriate group
-                    if date_key == today:
+                    if date_obj.strftime('%Y-%m-%d') == today:
                         today_interventions.append(intervention)
                     else:
                         if date_key not in grouped_interventions:
@@ -118,6 +119,7 @@ class InterventionListView(View):
             'grouped_interventions': sorted_interventions,
             'today': today
         })
+
 # portal/views.py
 class InterventionDetailView(View):
     template_name = 'portal/interventions/detail.html'

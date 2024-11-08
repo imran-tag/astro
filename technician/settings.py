@@ -30,7 +30,8 @@ ALLOWED_HOSTS = [
     '*.onrender.com',
     'astro-g8an.onrender.com',
     'localhost',
-    '127.0.0.1'
+    '127.0.0.1',
+    'mon.astro-tech.fr'
 ]
 
 

@@ -225,28 +225,28 @@
 
     <!-- Main Content -->
     <div class="main-content">
-        <!-- Today's interventions -->
-        {% if 'today' in grouped_interventions %}
-            <h2 class="date-header">Aujourd'hui</h2>
-            {% for intervention in grouped_interventions.today %}
+    <!-- Today's interventions -->
+    {% if 'today' in grouped_interventions %}
+        <h2 class="date-header">Aujourd'hui</h2>
+        {% for intervention in grouped_interventions.today %}
+            {% include "portal/interventions/card.html" with intervention=intervention %}
+        {% endfor %}
+    {% endif %}
+
+    <!-- Future interventions -->
+    {% for date, interventions in grouped_interventions.items %}
+        {% if date != 'today' %}
+            <h2 class="date-header">{{ date|date:"l"|title }}, {{ date|date:"j" }} {{ date|date:"F"|title }}</h2>
+            {% for intervention in interventions %}
                 {% include "portal/interventions/card.html" with intervention=intervention %}
             {% endfor %}
         {% endif %}
+    {% endfor %}
 
-        <!-- Future interventions -->
-        {% for date, interventions in grouped_interventions.items %}
-            {% if date != 'today' %}
-                <h2 class="date-header">{{ date|date:"l, j F"|title }}</h2>
-                {% for intervention in interventions %}
-                    {% include "portal/interventions/card.html" with intervention=intervention %}
-                {% endfor %}
-            {% endif %}
-        {% endfor %}
-
-        {% if not grouped_interventions %}
-            <p class="text-center text-gray-500 my-8">Aucune intervention trouvée</p>
-        {% endif %}
-    </div>
+    {% if not grouped_interventions %}
+        <p class="text-center text-gray-500 my-8">Aucune intervention trouvée</p>
+    {% endif %}
+</div>
 
     <!-- Bottom Navigation -->
     <div class="bottom-nav">
